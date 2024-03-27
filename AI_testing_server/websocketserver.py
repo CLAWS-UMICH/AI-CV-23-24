@@ -12,10 +12,11 @@ import matplotlib.pyplot as plt
 import colorspacious as cs
 import numpy as np
 from lab_panel_finder import find_balls
+from geosamples import find_rocks
 
 def lab_ballz_finder(img):
     # UIA:x,y,z:a,b,c,d:$x,y$x,y$x,y$x,y
-    
+
     # balls = find_balls(img)            
     balls = None
     if not balls:
@@ -29,7 +30,7 @@ def lab_ballz_finder(img):
     return balls    
 
 def geosample_identifier(img):
-    return [[500, 500]], "This is a cup"
+    return find_rocks(img)
 
 async def handle_client_lab_detect(websocket, path):    
     try:    
