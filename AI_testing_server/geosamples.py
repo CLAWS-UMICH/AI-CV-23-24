@@ -20,11 +20,11 @@ def find_rocks(img):
 
     # Filter rocks based on the confidence and size of their bounding box
     rock_boxes = [box for box in result.boxes if result.names[box.cls[0].item()] == 'detect' and box.conf.item() >= 0.90]
-    rock_boxes.sort(key=lambda box: (box.xyxy[0][2] - box.xyxy[0][0]) * (box.xyxy[0][3] - box.xyxy[0][1]), reverse=True)
+    rock_boxes.sort(key=lambda box: (box.xyxy[0][2] - box.xyxy[0][0]) * (box.xyxy[0][3] - box.xyxy[0][1]), reverse=False)
     print(f"Total rocks detected with >= 90% accuracy: {len(rock_boxes)}")
 
     # Select top three largest rocks with >= 90% accuracy
-    top_3_rocks = rock_boxes[:3]
+    top_3_rocks = rock_boxes[:1]
 
     # Draw rectangle around each of the top three rocks
     for box in top_3_rocks:
@@ -50,7 +50,10 @@ def find_rocks(img):
     if not top_3_rocks:
         rock_com = [0, 0]
     else:        
-        cords = top_3_rocks[0].xyxy[0].tolist()        
+        cords = top_3_rocks[0].xyxy[0].tolist()       
+        print(cords) 
         cords = [round(x) for x in cords]        
         rock_com = [(cords[0]+cords[2])//2, (cords[1]+cords[3])//2]    
-    return [rock_com], "This is a cup"
+    print(rock_com)
+    # return [[200,200]], "This is a cup"
+    return [rock_com], "This is a hololens case"

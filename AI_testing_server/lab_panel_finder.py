@@ -58,22 +58,22 @@ def find_balls(img):
     no_luminance[:,:,0] = 0
     dist = np.linalg.norm(no_luminance-color, axis=2)    
 
-    # plt.imshow(dist)
-    # plt.show()
+    plt.imshow(dist)
+    plt.show()
 
     kernel = np.ones((5,5),np.float32)/25
     dist = cv2.filter2D(dist,-1,kernel)
     
-    # plt.imshow(dist)
-    # plt.show()
+    plt.imshow(dist)
+    plt.show()
 
     mask = cv2.inRange(dist, 30, 90)
 
     kernel = np.ones((10,10),np.float32)
     mask = cv2.filter2D(mask,-1,kernel)
 
-    # plt.imshow(mask)
-    # plt.show()
+    plt.imshow(mask)
+    plt.show()
 
     # Find contours
     cnts, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)    
@@ -105,10 +105,10 @@ def show_corners(img, corners):
 
     
 if __name__ == "__main__":
-    for i in range(1,60):
-        img = load_image(f'./fakepanel2142024/classified_{i}.jpg')
-        corners = find_balls(img)
-        print(corners)
-        show_corners(img, corners)
+    # for i in range(1,60):
+    img = load_image(f'./fake_panel.jpg')
+    corners = find_balls(img)
+    print(corners)
+    show_corners(img, corners)
 
     # find_balls('drawn_ball.jpg')

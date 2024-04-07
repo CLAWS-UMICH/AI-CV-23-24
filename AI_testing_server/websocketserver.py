@@ -14,6 +14,8 @@ import numpy as np
 from lab_panel_finder import find_balls
 from geosamples import find_rocks
 
+FITTED_MATRIX = np.load('../FittingRaycast/fit_raycast_matrix.npy')
+
 def lab_ballz_finder(img):
     # UIA:x,y,z:a,b,c,d:$x,y$x,y$x,y$x,y
 
@@ -21,7 +23,7 @@ def lab_ballz_finder(img):
     balls = None
     if not balls:
         # balls = [[300,300], [300,500], [600,300], [600,500]]
-        balls = [[200,500], [200, 400], [300,500], [300,400]]
+        balls = [[200,300], [200, 600], [500,300], [500,600]]
     # print(balls)
     for ball in balls:
         cv2.circle(img, ball, 10, (255,0,0))
@@ -32,9 +34,9 @@ def lab_ballz_finder(img):
 def geosample_identifier(img):
     return find_rocks(img)
 
-async def handle_client_lab_detect(websocket, path):    
+async def handle_client(websocket, path):    
     try:    
-        print("Starting Connection...")                
+        print("Starting Connection...")        
         while True:
             encoded_image = await websocket.recv()
             coordinates, raw_data = encoded_image.split("}$#EndHeadCoord", 1)
@@ -52,24 +54,52 @@ async def handle_client_lab_detect(websocket, path):
                 points = lab_ballz_finder(img)             
             elif type == "geosample":
                 points, description = geosample_identifier(img)
+            elif type == "calibrate":
+                loop = asyncio.get_event_loop()
+                while True:
+                    print("Enter initial test coordinates -> x,y: ", end="")
+                    user_input = await loop.run_in_executor(None, input)
+                    if user_input.lower() == "stop" or user_input.lower() == "quit":
+                        break      
+                    coords = user_input.split(",")
+                    cv2.circle(img, (int(coords[0]), int(coords[1])), 10, (255,0,0))
+                    cv2.imwrite('image.jpg',img)
 
-            # Pos shift goes up or right, stretch x,y
-            X_STRETCH, Y_STRETCH = 1.8, 1.8
-            X_SHIFT, Y_SHIFT = 200, -150
+                    while True:
+                        print("Enter coordinates (type 'stop' or 'quit' to exit): ", end="")                                        
+                        user_input = await loop.run_in_executor(None, input)            
+
+                        if user_input.lower() == "stop" or user_input.lower() == "quit":
+                            break                    
+
+                        res = f"{type}:{position}:{orientation}:{user_input}:{description}"
+                        await websocket.send(res)
+
+
+            if type != "calibrate":
+                # OLD HARDCODED SHIFTING
+                # # Pos shift goes up or right, stretch x,y
+                # X_STRETCH, Y_STRETCH = 1.8, 1.8
+                # X_SHIFT, Y_SHIFT = 200, -600
+                # for x,y in points:                                              
+                #     new_x = (x-600)*X_STRETCH+600+X_SHIFT
+                #     new_y = (y-300)*Y_STRETCH+300+Y_SHIFT
+
+                #     coords = f"{new_x},{new_y}"
+                #     temp.append(coords)
+                
+                temp = []
+                
+                for x,y in points:
+                    transform = np.dot(np.array([x,y,1]), FITTED_MATRIX)
+                    coords = f"{transform[0]},{transform[1]}"
+                    temp.append(coords)
+
+                transformed_points = "$".join(temp)
+
+                res = f"{type}:{position}:{orientation}:{transformed_points}:{description}"            
             
-            temp = []
-            for x,y in points:                                              
-                new_x = (x-600)*X_STRETCH+600+X_SHIFT
-                new_y = (y-300)*Y_STRETCH+300+Y_SHIFT
-
-                coords = f"{new_x},{new_y}"
-                temp.append(coords)
-            
-            transformed_points = "$".join(temp)
-
-            res = f"{type}:{position}:{orientation}:{transformed_points}:{description}"            
-        
-            await websocket.send(res)            
+                await websocket.send(res)            
             
     except websockets.exceptions.ConnectionClosed:
         print("Closed")
@@ -77,7 +107,7 @@ async def handle_client_lab_detect(websocket, path):
 
 print("Listening...")
 # start_server = websockets.serve(handle_client, "35.3.205.44", 5001)
-start_server = websockets.serve(handle_client_lab_detect, "100.64.2.37", 5001)
+start_server = websockets.serve(handle_client, "100.64.2.37", 5001)
 
 asyncio.get_event_loop().run_until_complete(start_server)
 asyncio.get_event_loop().run_forever()
